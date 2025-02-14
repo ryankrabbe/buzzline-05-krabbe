@@ -55,6 +55,7 @@ def init_db(db_path: pathlib.Path):
             logger.info("SUCCESS: Got a cursor to execute SQL.")
 
             cursor.execute("DROP TABLE IF EXISTS streamed_messages;")
+            cursor.execute("DROP TABLE IF EXISTS positive_sentiments;")
 
             cursor.execute(
                 """
@@ -69,9 +70,25 @@ def init_db(db_path: pathlib.Path):
                     message_length INTEGER
                 )
             """
+        )
+            
+            # Create separate table for positive sentiment messages
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS positive_sentiments (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    message TEXT,
+                    author TEXT,
+                    timestamp TEXT,
+                    category TEXT,
+                    sentiment REAL,
+                    keyword_mentioned TEXT,
+                    message_length INTEGER
+                )
+                """
             )
             conn.commit()
-        logger.info(f"SUCCESS: Database initialized and table ready at {db_path}.")
+        logger.info(f"SUCCESS: Database initialized and tables ready at {db_path}.")
     except Exception as e:
         logger.error(f"ERROR: Failed to initialize a sqlite database at {db_path}: {e}")
 
@@ -91,9 +108,8 @@ def insert_message(message: dict, db_path: pathlib.Path) -> None:
     logger.info(f"{message=}")
     logger.info(f"{db_path=}")
 
-    STR_PATH = str(db_path)
     try:
-        with sqlite3.connect(STR_PATH) as conn:
+        with sqlite3.connect(str(db_path)) as conn:
             cursor = conn.cursor()
             cursor.execute(
                 """
@@ -130,28 +146,36 @@ def insert_positive_sentiment_message(message: dict, db_path: pathlib.Path) -> N
     - db_path (pathlib.Path): Path to the SQLite database file.
     """
     logger.info("Checking if message has positive sentiment before inserting into the database.")
+
+    # Retrieve values from the message
     timestamp = message.get('timestamp')
     sentiment = message.get('sentiment')
     message_text = message.get('message')
     author = message.get('author')
     category = message.get('category')
     keyword_mentioned = message.get('keyword_mentioned')
+    message_length = int(message.get('message_length', 0))
 
     # Check if the sentiment is positive
-    if sentiment > 0:  # Ensures only positive sentiment messages are inserted
+    if sentiment > 0.5:  # Ensures only positive sentiment messages are inserted
         try:
             with sqlite3.connect(str(db_path)) as conn:
                 cursor = conn.cursor()
                 cursor.execute(
                     """
-                    INSERT INTO streamed_messages (timestamp, sentiment, message, author, category, keyword_mentioned)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                    """, (timestamp, sentiment, message_text, author, category, keyword_mentioned)
+                    INSERT INTO positive_sentiments (
+                        message, author, timestamp, category, sentiment, keyword_mentioned, message_length
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (message_text, author, timestamp, category, sentiment, keyword_mentioned, message_length)
                 )
                 conn.commit()
             logger.info(f"Successfully inserted positive sentiment message: {message_text}")
         except Exception as e:
             logger.error(f"ERROR: Failed to insert positive sentiment message into the database: {e}")
+    else:
+        logger.info("Message sentiment is not positive; not inserting into positive_sentiments.")
 
 #####################################
 # Define Function to Retrieve Positive Sentiment Messages from the Database
@@ -172,7 +196,9 @@ def get_positive_sentiment_data(db_path: pathlib.Path):
             cursor = conn.cursor()
             cursor.execute(
                 """
-                SELECT * FROM streamed_messages WHERE sentiment > 0
+                SELECT id, message, author, timestamp, category, sentiment, keyword_mentioned, message_length 
+                FROM positive_sentiments
+                ORDER BY timestamp ASC
                 """
             )
             rows = cursor.fetchall()

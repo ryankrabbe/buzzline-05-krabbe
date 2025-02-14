@@ -50,11 +50,11 @@ from consumers.db_sqlite_case import init_db, insert_message
 # #####################################
 
 
-def process_message(message: dict, db_path: pathlib.Path) -> None:
+def process_message(message: dict, db_path: pathlib.Path) -> dict:
     """
     Process and transform a single JSON message.
+    Returns the processed message dictionary.
     """
-
     logger.info("Called process_message() with:")
     logger.info(f"   {message=}")
 
@@ -66,12 +66,12 @@ def process_message(message: dict, db_path: pathlib.Path) -> None:
         else:
             sentiment = 0.0
 
-        if sentiment > 0:
-            # Store all positive sentiment messages
+        # If sentiment is positive, store in the positive_sentiments table
+        if sentiment > 0.5:
             logger.info(f"Positive sentiment message: {message}")
             insert_positive_sentiment_message(message, db_path) 
 
-        # Processed message
+        # Build the processed message dictionary
         processed_message = {
             "message": message.get("message"),
             "author": message.get("author"),
