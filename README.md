@@ -1,38 +1,8 @@
-# buzzline-05-case
+# buzzline-04-krabbe
 
-Nearly every streaming analytics system stores processed data somewhere for further analysis, historical reference, or integration with BI tools.
+## Overview of my project
 
-In this example project, we incorporate a relational data store. 
-We use SQLite, but the example could be altered to work with MySQL, PostgreSQL, or MongoDB.
-
-## VS Code Extensions
-
-- Black Formatter by Microsoft
-- Markdown All in One by Yu Zhang
-- PowerShell by Microsoft (on Windows Machines)
-- Pylance by Microsoft
-- Python by Microsoft
-- Python Debugger by Microsoft
-- Ruff by Astral Software (Linter)
-- SQLite Viewer by Florian Klampfer
-- WSL by Microsoft (on Windows Machines)
-
-## Task 1. Use Tools from Module 1 and 2
-
-Before starting, ensure you have completed the setup tasks in <https://github.com/denisecase/buzzline-01-case> and <https://github.com/denisecase/buzzline-02-case> first. 
-
-Versions matter. Python 3.11 is required. See the instructions for the required Java JDK and more. 
-
-## Task 2. Copy This Example Project and Rename
-
-Once the tools are installed, copy/fork this project into your GitHub account
-and create your own version of this project to run and experiment with. 
-Follow the instructions in [FORK-THIS-REPO.md](https://github.com/denisecase/buzzline-01-case/docs/FORK-THIS-REPO.md).
-
-OR: For more practice, add these example scripts or features to your earlier project. 
-You'll want to check requirements.txt, .env, and the consumers, producers, and util folders. 
-Use your README.md to record your workflow and commands. 
-    
+I created a consumer named consumer_krabbe.py to process JSON messages and store them in a SQLite database. I chose to store all the messages with in my streamed_messages and then I created another table named positive_sentiments and stored only messages with positive sentiment. Both tables store message, author, timestamp, category, sentiment, keyword mentioned, and message length. I also created visualization to show how positive sentiment trends change over time.
 
 ## Task 3. Manage Local Project Virtual Environment
 
