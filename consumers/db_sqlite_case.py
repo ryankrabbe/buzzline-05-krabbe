@@ -75,11 +75,9 @@ def init_db(db_path: pathlib.Path):
     except Exception as e:
         logger.error(f"ERROR: Failed to initialize a sqlite database at {db_path}: {e}")
 
-
 #####################################
-# Define Function to Insert a Processed Message into the Database
-#####################################
-
+# Define Function to Insert a Message Into the Database
+#####################################       
 
 def insert_message(message: dict, db_path: pathlib.Path) -> None:
     """
@@ -117,6 +115,87 @@ def insert_message(message: dict, db_path: pathlib.Path) -> None:
         logger.info("Inserted one message into the database.")
     except Exception as e:
         logger.error(f"ERROR: Failed to insert message into the database: {e}")
+
+#####################################
+# Define Function to Insert a Positive Message into the Database
+#####################################
+
+
+def insert_positive_sentiment_message(message: dict, db_path: pathlib.Path) -> None:
+    """
+    Insert a positive sentiment message into the SQLite database.
+
+    Args:
+    - message (dict): The positive sentiment message to insert.
+    - db_path (pathlib.Path): Path to the SQLite database file.
+    """
+    logger.info("Checking if message has positive sentiment before inserting into the database.")
+    timestamp = message.get('timestamp')
+    sentiment = message.get('sentiment')
+    message_text = message.get('message')
+    author = message.get('author')
+    category = message.get('category')
+    keyword_mentioned = message.get('keyword_mentioned')
+
+    # Check if the sentiment is positive
+    if sentiment > 0:  # Ensures only positive sentiment messages are inserted
+        try:
+            with sqlite3.connect(str(db_path)) as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    """
+                    INSERT INTO streamed_messages (timestamp, sentiment, message, author, category, keyword_mentioned)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """, (timestamp, sentiment, message_text, author, category, keyword_mentioned)
+                )
+                conn.commit()
+            logger.info(f"Successfully inserted positive sentiment message: {message_text}")
+        except Exception as e:
+            logger.error(f"ERROR: Failed to insert positive sentiment message into the database: {e}")
+
+#####################################
+# Define Function to Retrieve Positive Sentiment Messages from the Database
+#####################################
+
+def get_positive_sentiment_data(db_path: pathlib.Path):
+    """
+    Retrieve all messages from the database with positive sentiment.
+
+    Args:
+    - db_path (pathlib.Path): Path to the SQLite database file.
+
+    Returns:
+    - list: A list of messages with positive sentiment.
+    """
+    try:
+        with sqlite3.connect(str(db_path)) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT * FROM streamed_messages WHERE sentiment > 0
+                """
+            )
+            rows = cursor.fetchall()
+            positive_sentiment_messages = []
+
+            for row in rows:
+                message = {
+                    "id": row[0],
+                    "message": row[1],
+                    "author": row[2],
+                    "timestamp": row[3],
+                    "category": row[4],
+                    "sentiment": row[5],
+                    "keyword_mentioned": row[6],
+                    "message_length": row[7],
+                }
+                positive_sentiment_messages.append(message)
+
+            logger.info(f"Successfully retrieved {len(positive_sentiment_messages)} positive sentiment messages.")
+            return positive_sentiment_messages
+    except Exception as e:
+        logger.error(f"ERROR: Failed to retrieve positive sentiment data from the database: {e}")
+        return []
 
 
 #####################################
